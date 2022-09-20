@@ -3,5 +3,7 @@
 ## Description
 
 This project contains a server side that serves a recipe site called "Peachy Recipes".
+
 Server creates API requests to Spoonacular when needed.
+
 A connection to MySQL DB is needed.
