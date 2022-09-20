@@ -1,0 +1,707 @@
+---
+openapi: 3.0.0
+info:
+  title: Recipes API
+  description: This is an API for a recipes website
+  contact:
+    email: you@your-company.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: https://virtserver.swaggerhub.com/ChenMordehai/API/1.0.0
+    description: SwaggerHub API Auto Mocking
+tags:
+  - name: user
+    description: user's info
+  - name: recipe
+    description: recipeé info
+paths:
+  /register:
+    post:
+      tags:
+        - auth
+      summary: A new user from the client is added to the server
+      description: A JSON object that contains all the details about the new user.
+      operationId: registerUser
+      requestBody:
+        description: Inventory item to add
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "201":
+          description: New User was added to system
+        "400":
+          description: wrong input parameters
+        "409":
+          description: User already exists in the system
+  /login:
+    post:
+      tags:
+        - auth
+      summary: A known user wants to login to his account.
+      description: A JSON object that contains the user's username and password.
+      operationId: loginUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/loginForm"
+        required: true
+      responses:
+        "200":
+          description: User logged-in successfully
+        "401":
+          description: wrong username or password
+  /logout:
+    post:
+      tags:
+        - auth
+      description: A user wants to logout from the system.
+      responses:
+        "200":
+          description: User logged-out successfully
+
+  /recipes/search/{queryToSearch}:
+    get:
+      tags:
+        - recipes
+      summary: User wants to search for a recipe
+      description: Request that contains the user's query(needed), number of wanted results(optional) and costumize filter(optional).
+      operationId: searchRecipeInSystem
+      parameters:
+        - name: queryToSearch
+          in: path
+          description: user's query to search(recipe's name/ wanted food).
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: pancakes
+        - name: numOfResults
+          in: query
+          description: number of results the user want to get. optional parameter, default is 5, values can be 5/10/15.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: integer
+            example: 10
+            default: 5
+            enum:
+              - 5
+              - 10
+              - 15
+        - name: cuisine
+          in: query
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            description: parameter can be any of these cuisines 'https://spoonacular.com/food-api/docs#Cuisines'
+            example: Chinese
+        - name: diet
+          in: query
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            description: parameter can be fed with any of these diets 'https://spoonacular.com/food-api/docs#Diets'
+            example: Ketogenic
+        - name: intolerance
+          in: query
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            description: parameter can be fed with any of these intolerances 'https://spoonacular.com/food-api/docs#Intolerances'
+            example: Peanut
+          
+      responses:
+        "200":
+          description: success in returning search results.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/recipePreviewInfo"
+        "204":
+          description: No relevant results.
+
+  /recipes/{recipeId}:
+    get:
+      tags:
+        - recipes
+      summary: Returns specific recipe's data
+      description: |
+        Return the data about the wanted recipe:
+        all the details described in the general recipes page
+        Ingredients list with quantities
+        instructions
+        serving size
+      operationId: showRecipeData
+      parameters:
+        - name: recipeId
+          in: path
+          description: the wanted recipe's id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            $ref: "#/components/schemas/recipes"
+      responses:
+        "200":
+          description: the wanted recipe's data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/recipeFullInfo"
+        "204":
+          description: no recipe was found with that id
+        "500":
+          description: invalid recipe id
+
+  /users/favorites:
+    get:
+      tags:
+        - users
+      summary: returns all user's favorite recipes
+      description: favoite recipes of current logged in user
+      responses:
+        "200":
+          description: user's favorite recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/recipePreviewInfo"
+        "204":
+          description: no favorite recipes for current user
+          
+    post:
+      tags:
+        - users
+      summary: adds a recipe to the favorite recipes list of the logged-in user
+      description: body request with recipeId and query param that indicates a personal recipe
+      parameters:
+        - name: personal
+          in: query
+          description: determine if the recipe is personal or not.
+          required: true
+          schema:
+            type: boolean
+            example: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/recipes"
+      responses:
+        "200":
+          description: The Recipe successfully saved as favorite
+        "409":
+          description: recipe was already added as favorite
+    
+    delete:
+      tags:
+        - users
+      summary: remove a recipe from the favorite recipes list of the logged-in user
+      description: body request with recipeId and query param that indicates a personal recipe
+      parameters:
+        - name: personal
+          in: query
+          description: determine if the recipe is personal or not.
+          required: true
+          schema:
+            type: boolean
+            example: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/recipes"
+      responses:
+        "200":
+          description: The Recipe successfully removed from favorites
+        "409":
+          description: recipe was not marked as favorite
+  
+  /users/personals:
+    get:
+      tags:
+        - users
+      summary: returns all user's recipes that he created
+      description: recipes that current logged in user created
+      responses:
+        "200":
+          description: user's personal recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/recipePreviewInfo"
+        "204":
+          description: no private recipes for current user
+          
+  /users/personal/{recipeId}:
+    get:
+      tags:
+        - users
+      summary: returns a user's personal recipe that he created
+      description: recipe that current logged in user created
+      parameters:
+        - name: recipeId
+          in: path
+          description: the wanted recipe's id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            $ref: "#/components/schemas/recipes"
+      responses:
+        "200":
+          description: a user's personal recipe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/recipeFullInfo"
+        "204":
+          description: no private recipe was found with that id
+          
+  /users/myFamilyRecipes:
+    get:
+      tags:
+        - users
+      summary: returns all user's family recipes(at least 3)
+      description: family recipes of current logged in user
+      responses:
+        "200":
+          description: user's family recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/userFamilyRecipes"
+        "204":
+          description: no family recipes for current user
+  /users/add:
+    post:
+      tags:
+        - users
+      summary: A new user adds new recipe
+      description: A JSON object that contains all the details about the new recipe.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/recipeAddInfo"
+        required: true
+      responses:
+        "201":
+          description: New Recipe was added to system
+
+  /recipes/random:
+    get:
+      tags:
+        - recipes
+      summary: returns 3 random recipes from spoonacular
+      description: 3 random recipes from spoonacular API
+      responses:
+        "200":
+          description: 3 random recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/recipePreviewInfo"
+
+  /users/lastThreeViewed:
+    get:
+      tags:
+        - users
+      summary: returns 3 last recipes current user saw
+      description: 3 recipes
+      responses:
+        "200":
+          description: 3 last recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/recipePreviewInfo"
+        "204":
+          description: current user didn't watch any recipes yet.
+          
+  /users/upcommingMeal/{recipeId}:
+    post:
+      tags:
+        - users
+      summary: add recipe to current user's meal plan
+      parameters:
+        - name: isPersonal
+          in: query
+          description: determine if the recipe is personal or not.
+          required: true
+          schema:
+            type: boolean
+            example: true
+        - name: recipeId
+          in: path
+          description: recipe id to add.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            $ref: "#/components/schemas/recipes"
+      responses:
+        "200":
+          description: Recipe successfully added to Upcomming meal
+          
+  /users/upcommingMeal:
+    get:
+      tags:
+        - users
+      summary: get current user's meal plan
+      responses:
+        "200":
+          description: current meal plan of logged in user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/recipeInMeal"
+  
+  /users/NumRecipesUpcommingMeal:
+    get:
+      tags:
+        - users
+      summary: get total number of recipes in current user's meal plan
+      responses:
+        "200":
+          description: number of recipes in meal plan of logged in user.
+          content:
+            application/json:
+              schema:
+                type: integer
+                example: 3
+  
+  /users/changeRecipeOrderInMeal:
+    put:
+      tags:
+        - users
+      summary: change recipe order in current user's meal plan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/recipeNewOrder"
+      responses:
+        "200":
+          description: recipe order in current user's meal plan changed successfully
+     
+  /users/removeRecipeFromMeal:
+    delete:
+      tags:
+        - users
+      summary: delete recipe from current user's meal plan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/recipes"
+      responses:
+        "200":
+          description: recipe was deleted successfully from current user's meal plan
+          
+  /users/removeAllRecipesFromMeal:
+    delete:
+      tags:
+        - users
+      summary: delete all recipes from current user's meal plan
+      responses:
+        "200":
+          description: all recipes were deleted successfully from current user's meal plan
+
+components:
+  schemas:
+    User:
+      required:
+        - username
+        - firstname
+        - lastname
+        - country
+        - password
+        - email
+      type: object
+      properties:
+        username:
+          maxLength: 8
+          minLength: 3
+          type: string
+          description: username contains between 3 to 8 letters(only)
+          example: chenush
+        firstname:
+          type: string
+          description: user's' first name
+          example: Dani
+        lastname:
+          type: string
+          description: user's' last name
+          example: Cohen
+        country:
+          type: string
+          description: user's' country
+          example: Spain
+        password:
+          maxLength: 10
+          minLength: 5
+          type: string
+          description: user's' password. contains between 5 to 10 chars, at least 1 number and 1 special char.
+          format: password
+          example: lala99@
+        email:
+          type: string
+          description: user's' email
+          format: email
+          example: chenush@gmail.com
+      description: Model containing user info
+    loginForm:
+      required:
+        - password
+        - username
+      type: object
+      properties:
+        username:
+          maxLength: 8
+          minLength: 3
+          type: string
+          description: username contains between 3 to 8 letters(only)
+          example: chenush
+        password:
+          maxLength: 10
+          minLength: 5
+          type: string
+          description: user's' password. contains between 5 to 10 chars, at least 1 number and 1 special char.
+          format: password
+          example: lala99@
+      description: login user's info
+    recipes:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+    recipePreviewInfo:
+      type: object
+      properties:
+        recipeInfo:
+          $ref: "#/components/schemas/recipeinfo"
+        recipeHistoryByUser:
+          $ref: "#/components/schemas/recipehistoryByUser"
+      description: preview of the recipe's information.
+    recipeinfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: recipe's id (unique)
+          example: 155
+        image:
+          type: string
+          description: The url to the recipe's picture
+          example: https://img.mako.co.il/2018/05/07/IMG_2700_i.jpg
+        name:
+          type: string
+          description: recipe's name/title
+          example: vanilla panckes
+        preparationTime:
+          type: integer
+          description: time (in minutes) it takes to make the recipe
+          example: 15
+        totalLikes:
+          type: integer
+          description: number of likes the recipe got
+          example: 555
+        isVegetarian:
+          type: boolean
+          description: true if recipe is vegetarian, else false.
+          example: false
+        isVegan:
+          type: boolean
+          description: true if recipe is vegetarian, else false.
+          example: false
+        isGlutenFree:
+          type: boolean
+          description: true if recipe is vegetarian, else false.
+          example: true
+      description: recipe's personal information.
+    recipehistoryByUser:
+      type: object
+      properties:
+        wasWatched:
+          type: boolean
+          description: true if user watched the recipe in the past, else false.
+          example: true
+        isFavorite:
+          type: boolean
+          description: true if recipe is in the user's favorite recipes, else false.
+          example: true
+      description: user's history with a spesific recipe.
+    extendedIngredients:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name of the ingredient
+          example: oil
+        amount:
+          type: integer
+          description: quantity
+          example: 2
+        unit:
+          type: string
+          description: how to measure ingredient's amount
+          example: cups
+      description: ingredient's info
+    analyzedInstructions:
+      type: object
+      properties:
+        stepNum:
+          type: integer
+          description: numbet of step
+          example: 1
+        stepContent:
+          type: string
+          description: what to do in current step
+          example: Turn the oven to 180 degrees
+      description: step in recipe's instructions
+    userFamilyRecipes:
+      type: object
+      properties:
+        recipe_id: 
+          type: integer
+          description: recipe's id
+          example: 5
+        user_id:
+          type: integer
+          description: user's id
+          example: 24
+        title:
+          type: string
+          description: recipe's name
+          example: tomato soup
+        owner:
+          type: string
+          description: person who owns/created the recipe
+          example: Mother Lili
+        occasion:
+          type: string
+          description: for which event the recipe is suitable
+          example: passover
+        ingredients:
+          type: string
+          description: recipe's ingredients splitted by ','
+          example: "whole chicken,water,salt,onions sliced,celery stalks sliced,crushed garlic cloves,carrots sliced"
+        ingredient_amount:
+          type: string
+          description: recipe's ingredients amounts splitted by ','
+          example: "1,8,1,3,2,4,6"
+        ingredient_sizing:
+          type: string
+          description: recipe's ingredients units splitted by ','
+          example: "kg,cup, ,cup,tbsp,tbsp,tsp,cups, "
+        instructions:
+          type: string
+          description: recipe's instructions  splitted by '|\n'
+          example: "1# Pick icecream.|\n2# Eat icecream."
+        image:
+          type: string
+          description: The url to the recipe's picture
+          example: https://img.mako.co.il/2018/05/07/IMG_2700_i.jpg
+        readyInMinutes:
+          type: integer
+          description: making duration
+          example: 50
+        vegetarian:
+          type: boolean
+          description: true if recipe is vegetarian, else false.
+          example: false
+        vegan:
+          type: boolean
+          description: true if recipe is vegetarian, else false.
+          example: false
+        glutenFree:
+          type: boolean
+          description: true if recipe is vegetarian, else false.
+          example: true
+        servingSize:
+          type: integer
+          description: number of servings
+          example: 4
+        
+      description: user's family recipe
+    recipeFullInfo:
+      type: object
+      properties:
+        recipeInfo:
+          $ref: "#/components/schemas/recipePreviewInfo"
+        ingredients:
+          type: array
+          items:
+            $ref: "#/components/schemas/extendedIngredients"
+        instructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/analyzedInstructions"
+        first_time:
+          type: boolean
+      description: is it the first time user see this recipe
+    
+    recipeNewOrder:
+      type: object
+      properties:
+        recipeId:
+          $ref: "#/components/schemas/recipes"
+        neworder:
+          type: integer
+          description: new order of recipe
+          example: 2
+          
+    recipeAddInfo:
+      type: object
+      properties:
+        recipeInfo:
+          $ref: "#/components/schemas/recipeinfo"
+        ingredientsAndQuantities:
+          type: array
+          items:
+            $ref: "#/components/schemas/extendedIngredients"
+        instructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/analyzedInstructions"
+        
+    recipeInMeal:
+      type: object
+      properties:
+        recipeOrder:
+          type: integer
+          description: order of recipe in meal
+          example: 2
+        recipeInfo:
+          $ref: "#/components/schemas/recipeinfo"
