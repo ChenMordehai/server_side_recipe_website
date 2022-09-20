@@ -4,7 +4,4 @@
 
 This project contains a server side that serves a recipe site called "Peachy Recipes".
 Server creates API requests to Spoonacular when needed.
-
-There are 2 branches:
-1. main - can run on a VM.
-2. local - can run localy.
+A connection to MySQL DB is needed.
